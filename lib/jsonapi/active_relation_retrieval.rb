@@ -260,7 +260,7 @@ module JSONAPI
       def find_related_fragments(source_fragment, relationship, options = {})
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           source_resource_klasses = if relationship.foreign_key_on == :self
-                                      relationship.class.polymorphic_types(relationship.name).collect do |polymorphic_type|
+                                      relationship.polymorphic_types.collect do |polymorphic_type|
                                         resource_klass_for(polymorphic_type)
                                       end
                                     else
@@ -271,7 +271,7 @@ module JSONAPI
           source_resource_klasses.each do |resource_klass|
             inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
 
-            fragments.merge!(resource_klass.find_related_fragments_from_inverse([source_fragment], inverse_direct_relationship, options, true))
+            fragments.merge!(resource_klass.find_related_fragments_from_inverse([source_fragment], inverse_direct_relationship, options, false))
           end
           fragments
         else
@@ -282,7 +282,7 @@ module JSONAPI
       def find_included_fragments(source_fragments, relationship, options)
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           source_resource_klasses = if relationship.foreign_key_on == :self
-                                      relationship.class.polymorphic_types(relationship.name).collect do |polymorphic_type|
+                                      relationship.polymorphic_types.collect do |polymorphic_type|
                                         resource_klass_for(polymorphic_type)
                                       end
                                     else
@@ -514,7 +514,9 @@ module JSONAPI
 
         related_alias = join_manager.join_details_by_relationship(relationship)[:alias]
 
-        records = records.select(Arel.sql("#{concat_table_field(related_alias, related_klass._primary_key)}"))
+        # Rails 8 compatible field selection
+        field_name = concat_table_field(related_alias, related_klass._primary_key, true)
+        records = records.select(Arel.sql(field_name))
 
         count_records(records)
       end
@@ -715,14 +717,27 @@ module JSONAPI
           join_manager = options.dig(:_relation_helper_options, :join_manager)
           sort_field = join_manager ? get_aliased_field(field, join_manager) : field
           options[:_relation_helper_options][:sort_fields].push("#{sort_field}")
-          records = records.order(Arel.sql("#{sort_field} #{direction}"))
+          
+          # Rails 8 compatible ordering - avoid string interpolation in Arel.sql when possible
+          if Rails::VERSION::MAJOR >= 8
+            # Use Arel for safer SQL generation in Rails 8
+            if sort_field.is_a?(String) && sort_field.include?('.')
+              records = records.order(Arel.sql("#{sort_field} #{direction}"))
+            else
+              records = records.order(sort_field => direction.to_sym)
+            end
+          else
+            records = records.order(Arel.sql("#{sort_field} #{direction}"))
+          end
         end
         records
       end
 
       # Assumes ActiveRecord's counting. Override if you need a different counting method
       def count_records(records)
-        if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR == 5 && ActiveRecord::VERSION::MINOR >= 1)
+        if Rails::VERSION::MAJOR >= 8
+          records.count
+        elsif Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR == 5 && ActiveRecord::VERSION::MINOR >= 1)
           records.count(:all)
         else
           records.count
@@ -863,7 +878,20 @@ module JSONAPI
         else
           join_manager = options.dig(:_relation_helper_options, :join_manager)
           field = join_manager ? get_aliased_field(filter, join_manager) : filter.to_s
-          records = records.where(Arel.sql(field) => value)
+          
+          # Rails 8 compatible filtering - safer SQL generation
+          if Rails::VERSION::MAJOR >= 8
+            # For Rails 8, try to avoid Arel.sql when possible for simple field names
+            if field.is_a?(String) && field.match?(/\A[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?\z/)
+              # Simple field name, can use directly
+              records = records.where(field => value)
+            else
+              # Complex field expression, use Arel.sql
+              records = records.where(Arel.sql(field) => value)
+            end
+          else
+            records = records.where(Arel.sql(field) => value)
+          end
         end
 
         records

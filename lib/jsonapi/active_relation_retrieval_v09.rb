@@ -667,7 +667,11 @@ module JSONAPI
 
       # Assumes ActiveRecord's counting. Override if you need a different counting method
       def count_records(records)
-        records.count(:all)
+        if Rails::VERSION::MAJOR >= 8
+          records.count
+        else
+          records.count(:all)
+        end
       end
 
       def find_count(filters, options = {})

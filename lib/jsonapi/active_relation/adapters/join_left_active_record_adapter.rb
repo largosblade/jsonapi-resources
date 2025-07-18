@@ -9,7 +9,9 @@ module JSONAPI
         # example Post.joins(:comments).joins_left(comments: :author) will join the comments table twice,
         # once inner and once left in 5.2, but only as inner in earlier versions.
         def joins_left(*columns)
-          if Rails::VERSION::MAJOR >= 6 || (Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2)
+          if Rails::VERSION::MAJOR >= 6
+            left_joins(columns)
+          elsif Rails::VERSION::MAJOR >= 5 && ActiveRecord::VERSION::MINOR >= 2
             left_joins(columns)
           else
             join_dependency = ActiveRecord::Associations::JoinDependency.new(self, columns, [])
