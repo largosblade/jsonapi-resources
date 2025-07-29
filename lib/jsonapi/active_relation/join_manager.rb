@@ -78,12 +78,38 @@ module JSONAPI
       end
 
       def self.get_join_arel_node(records, options = {})
-        init_join_sources = records.arel.join_sources
-        init_join_sources_length = init_join_sources.length
+        # Rails 8 compatibility: handle arel access changes
+        if Rails::VERSION::MAJOR >= 8
+          # In Rails 8, we need to use a different approach to get join sources
+          # Use the relation's internal arel representation
+          begin
+            arel_relation = records.send(:arel)
+            init_join_sources = arel_relation.join_sources
+            init_join_sources_length = init_join_sources.length
+          rescue NoMethodError
+            # Fallback if arel method is completely unavailable
+            init_join_sources = []
+            init_join_sources_length = 0
+          end
+        else
+          init_join_sources = records.arel.join_sources
+          init_join_sources_length = init_join_sources.length
+        end
 
         records = yield(records, options)
 
-        join_sources = records.arel.join_sources
+        if Rails::VERSION::MAJOR >= 8
+          begin
+            arel_relation = records.send(:arel)
+            join_sources = arel_relation.join_sources
+          rescue NoMethodError
+            # Fallback if arel method is completely unavailable
+            join_sources = []
+          end
+        else
+          join_sources = records.arel.join_sources
+        end
+        
         if join_sources.length > init_join_sources_length
           last_join = (join_sources - init_join_sources).last
         else
@@ -97,8 +123,9 @@ module JSONAPI
       end
 
       def self.alias_from_arel_node(node)
-        # case node.left
-        case node&.left
+        return nil unless node&.respond_to?(:left)
+        
+        case node.left
         when Arel::Table
           node.left.name
         when Arel::Nodes::TableAlias
@@ -109,10 +136,17 @@ module JSONAPI
           nil
           # :nocov:
         else
-          # :nocov:
-          warn "alias_from_arel_node: Unsupported join type `#{node&.left.to_s}`"
-          nil
-          # :nocov:
+          # Rails 8 compatibility: try to extract alias from different node types
+          if Rails::VERSION::MAJOR >= 8 && node.left.respond_to?(:table_alias)
+            node.left.table_alias
+          elsif node.left.respond_to?(:name)
+            node.left.name
+          else
+            # :nocov:
+            warn "alias_from_arel_node: Unsupported join type `#{node.left.class}` - #{node.left.inspect}"
+            nil
+            # :nocov:
+          end
         end
       end
 

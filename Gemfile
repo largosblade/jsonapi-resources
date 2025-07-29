@@ -23,6 +23,8 @@ case version
 when 'master'
   gem 'railties', { git: 'https://github.com/rails/rails.git' }
   gem 'arel', { git: 'https://github.com/rails/arel.git' }
+when '8.0'
+  gem 'railties', "~> #{version}"
 when 'default'
   gem 'railties', '>= 6.0', '< 9.0'
 else

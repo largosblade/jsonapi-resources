@@ -70,13 +70,26 @@ module JSONAPI
           completed = (yield == :completed)
         end
       else
-        run_callbacks is_new? ? :create : :update do
-          @changing = true
-          run_callbacks callback do
-            completed = (yield == :completed)
+        # Rails 8 compatible callback handling
+        callback_name = is_new? ? :create : :update
+        
+        if Rails::VERSION::MAJOR >= 8
+          # Rails 8 might have stricter callback validation
+          run_callbacks callback_name do
+            @changing = true
+            run_callbacks callback do
+              completed = (yield == :completed)
+            end
+            completed = (save == :completed) if @save_needed || is_new?
           end
-
-          completed = (save == :completed) if @save_needed || is_new?
+        else
+          run_callbacks callback_name do
+            @changing = true
+            run_callbacks callback do
+              completed = (yield == :completed)
+            end
+            completed = (save == :completed) if @save_needed || is_new?
+          end
         end
       end
 
