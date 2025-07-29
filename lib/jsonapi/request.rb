@@ -34,7 +34,7 @@ module JSONAPI
       when 'index', 'show_related_resource', 'index_related_resources', 'show', 'show_relationship'
         false
       else
-        true
+        JSONAPI.configuration.allow_transactions
       end
     end
 

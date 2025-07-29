@@ -1060,6 +1060,8 @@ module Api
   module V3
     class PostsController < JSONAPI::ResourceController
     end
+    class MoonsController < JSONAPI::ResourceController
+    end
   end
 
   module V4
@@ -2056,6 +2058,15 @@ module Api
   module V3
     class PostResource < PostResource; end
     class PreferencesResource < PreferencesResource; end
+    class PlanetResource < JSONAPI::Resource
+    end
+    class MoonResource < JSONAPI::Resource
+      has_one :planet, always_include_optional_linkage_data: true
+
+      def self.records(options = {})
+        Moon.joins(:planet).merge(Planet.where(name: 'Satern')) # sic
+      end
+    end
   end
 end
 
