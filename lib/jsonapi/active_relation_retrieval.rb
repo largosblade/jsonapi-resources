@@ -109,6 +109,7 @@ module JSONAPI
 
         paginator = options[:paginator]
 
+        # binding.pry
         records = apply_request_settings_to_records(records: records(options),
                                                     filters: filters,
                                                     sort_criteria: sort_criteria,
@@ -228,6 +229,11 @@ module JSONAPI
           records = records.select(linkage_fields.collect { |f| f[:select] }) if linkage_fields.any?
 
           records = records.select(concat_table_field(_table_name, Arel.star))
+
+          joins_relationships = linkage_fields.map { |h| h[:relationship_name].to_sym }
+          records = records.joins(*joins_relationships)
+
+          # binding.pry
           resources = resources_for(records, options[:context])
 
           resources.each do |resource|
@@ -603,6 +609,7 @@ module JSONAPI
       end
 
       def relationship_records(relationship:, join_type: :inner, resource_type: nil, options: {})
+        binding.pry
         records = relationship.parent_resource.records_for_source_to_related(options)
         strategy = relationship.options[:apply_join]
 

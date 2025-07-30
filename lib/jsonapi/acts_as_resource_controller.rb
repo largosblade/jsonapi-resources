@@ -252,7 +252,7 @@ module JSONAPI
       response.status = response_document.status
       response.headers['Content-Type'] = JSONAPI::MEDIA_TYPE
 
-      render(render_options)
+      render(render_options, status: response_document.status, content_type: JSONAPI::MEDIA_TYPE)
     end
 
     def create_response_document
