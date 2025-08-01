@@ -539,7 +539,10 @@ module JSONAPI
         relationship_resource = resource.resource_klass_for(unformat_key(relationship.options[:class_name] || links_object[:type]).to_s)
         relationship_id = relationship_resource.verify_key(links_object[:id], @context)
         if relationship.polymorphic?
-          { id: relationship_id, type: unformat_key(links_object[:type].to_s) }
+          type = unformat_key(links_object[:type].to_s)
+          type_str = type.to_s
+          type = type_str.singularize.camelcase.to_sym unless type_str.safe_constantize
+          { id: relationship_id, type: }
         else
           relationship_id
         end

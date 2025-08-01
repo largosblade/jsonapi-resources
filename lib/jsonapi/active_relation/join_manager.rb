@@ -102,7 +102,6 @@ module JSONAPI
 
         if Rails::VERSION::MAJOR >= 8
           begin
-            # binding.pry
             arel_relation = records.send(:arel)
             join_sources = arel_relation.join_sources
           rescue NoMethodError
@@ -177,6 +176,7 @@ module JSONAPI
         join_array[level] = [] unless join_array[level]
 
         node.each do |relationship, relationship_details|
+          next if relationship_details[:resource_klasses].nil?
           relationship_details[:resource_klasses].each do |related_resource_klass, resource_details|
             join_array[level] << { relationship: relationship,
                                    relationship_details: relationship_details,
@@ -223,7 +223,6 @@ module JSONAPI
 
             records, join_node = self.class.get_join_arel_node(records, relationship, join_type,
                                                                options) do |records, options|
-              # binding.pry
               related_resource_klass.join_relationship(
                 records: records,
                 resource_type: related_resource_klass._type,

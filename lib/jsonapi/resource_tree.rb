@@ -74,6 +74,7 @@ module JSONAPI
     end
 
     def load_included(resource_klass, source_resource_tree, include_related, options)
+      
        include_related.try(:each_key) do |key|
         relationship = resource_klass._relationship(key)
         relationship_name = relationship.name.to_sym
@@ -88,7 +89,7 @@ module JSONAPI
 
         related_resource_tree = source_resource_tree.get_related_resource_tree(relationship)
         related_resource_tree.add_resource_fragments(related_fragments, include_related[key][:include_related])
-
+        
         # Now recursively get the related resources for the currently found resources
         load_included(relationship.resource_klass,
                       related_resource_tree,
@@ -117,6 +118,15 @@ module JSONAPI
           add_resource(resource, include_related)
         end
 
+        # resource_klasses = Set.new
+        # @fragments.each_key do |identity|
+        #   resource_klasses << identity.resource_klass
+        # end
+        # resource_klasses.each do |resource_klass|
+        #   binding.pry
+        #   # load_included(resource_klass, self, include_related, options)
+        # end
+
         complete_includes!(include_related, options)
       end
     end
@@ -136,7 +146,6 @@ module JSONAPI
       # ToDo: can we skip if more than one resource_klass found?
       resource_klasses = Set.new
       @fragments.each_key { |identity| resource_klasses << identity.resource_klass }
-
       resource_klasses.each { |resource_klass| load_included(resource_klass, self, include_related, options) }
 
       self

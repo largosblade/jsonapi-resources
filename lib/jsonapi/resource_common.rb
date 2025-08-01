@@ -700,9 +700,15 @@ module JSONAPI
         rebuild_relationships(_relationships)
       end
 
+      # attr_accessor :_model_hint_classes
+
       def model_hint(model: _model_name, resource: _type)
         resource_type = ((resource.is_a?(Class)) && resource.include?(JSONAPI::ResourceCommon)) ? resource._type : resource.to_s
-
+        # @_model_hint_classes ||= {}
+        # @_model_hint_classes[resource] ||= []
+        # @_model_hint_classes[resource] << -> do
+        #   model.is_a?(String) ? model.constantize : model
+        # end
         _model_hints[model.to_s.gsub('::', '/').underscore] = resource_type.to_s
       end
 
@@ -779,7 +785,8 @@ module JSONAPI
         # exclude the relationships that are already included in the include_related param
         include_related_names = include_related.present? ? include_related.keys : []
         relationship_names = to_one_relationships_including_optional_linkage_data.keys - include_related_names
-        _relationships.fetch_values(*relationship_names)
+        # _relationships.fetch_values(*relationship_names)
+        _relationships.fetch_values(*(_relationships.keys & to_one_relationships_including_optional_linkage_data.keys))
       end
 
       def resources_for(records, context)
@@ -916,7 +923,8 @@ module JSONAPI
 
       # quasi private class methods
       def _attribute_options(attr)
-        @_cached_attribute_options[attr] ||= default_attribute_options.merge(@_attributes[attr])
+        return @_cached_attribute_options[attr] unless @_cached_attribute_options[attr].nil?
+        @_cached_attribute_options[attr] ||= default_attribute_options.merge(@_attributes[attr] || {})
       end
 
       def _attribute_delegated_name(attr)

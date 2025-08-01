@@ -24,6 +24,7 @@ module JSONAPI
         ActiveSupport::Deprecation.warn('Use polymorphic_types instead of polymorphic_relations')
         @polymorphic_types ||= options[:polymorphic_relations]
       end
+      @polymorphic_types ||= []
 
       use_related_resource_records_for_joins_default = if options[:relation_name]
                                                          false
@@ -42,7 +43,7 @@ module JSONAPI
       @allow_include = options[:allow_include]
       @class_name = nil
 
-      @inverse_relationship = options[:inverse_relationship]&.to_sym
+      @inverse_relationship_ = options[:inverse_relationship]&.to_sym
 
       @_routed = false
       @_warned_missing_route = false
@@ -73,17 +74,25 @@ module JSONAPI
     end
 
     def inverse_relationship
-      unless @inverse_relationship
-        @inverse_relationship ||= if resource_klass._relationship(@parent_resource._type.to_s.singularize).present?
-                                    @parent_resource._type.to_s.singularize.to_sym
-                                  elsif resource_klass._relationship(@parent_resource._type).present?
-                                    @parent_resource._type.to_sym
-                                  else
-                                    nil
-                                  end
+      return @inverse_relationship_ if @inverse_relationship_.present?
+      if resource_klass._relationship(@parent_resource._type.to_s.singularize).present?
+        @parent_resource._type.to_s.singularize.to_sym
+      elsif resource_klass._relationship(@parent_resource._type).present?
+        @parent_resource._type.to_sym
+      else
+        nil
       end
+      # unless @inverse_relationship
+      #   @inverse_relationship ||= if resource_klass._relationship(@parent_resource._type.to_s.singularize).present?
+      #                               @parent_resource._type.to_s.singularize.to_sym
+      #                             elsif resource_klass._relationship(@parent_resource._type).present?
+      #                               @parent_resource._type.to_sym
+      #                             else
+      #                               nil
+      #                             end
+      # end
 
-      @inverse_relationship
+      # @inverse_relationship
     end
 
     def self.polymorphic_types(name)
@@ -167,16 +176,16 @@ module JSONAPI
         super
         @class_name = options.fetch(:class_name, name.to_s.camelize)
         @foreign_key ||= "#{name}_id".to_sym
+        
         @foreign_key_on = options.fetch(:foreign_key_on, :self)
-        # if parent_resource
-        #   @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
-        # end
+        if parent_resource
+          @inverse_relationship = options.fetch(:inverse_relationship, parent_resource._type)
+        end
 
         if options.fetch(:create_implicit_polymorphic_type_relationships, true) == true && polymorphic?
           # Setup the implicit relationships for the polymorphic types and exclude linkage data
           setup_implicit_relationships_for_polymorphic_types
         end
-
         @polymorphic_type_relationship_for = options[:polymorphic_type_relationship_for]
       end
 

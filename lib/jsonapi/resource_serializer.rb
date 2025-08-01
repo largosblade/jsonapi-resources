@@ -62,7 +62,7 @@ module JSONAPI
 
       primary_objects = []
       included_objects = []
-
+      
       resource_set.resource_klasses.each_value do |resource_klass|
         resource_klass.each_value do |resource|
           serialized_resource = object_hash(resource[:resource], resource[:relationships])
@@ -287,6 +287,8 @@ module JSONAPI
           end
 
           ro = relationship_object(source, relationship, rids, include_data)
+          relationship_object(source, relationship, rids, include_data)
+
           hash[format_key(name)] = ro unless ro.blank?
         end
       end
@@ -370,7 +372,8 @@ module JSONAPI
       link_object_hash = {}
 
       links = default_relationship_links(source, relationship)
-
+      # source._model
+      # binding.pry
       link_object_hash['links'] = links unless links.blank?
       link_object_hash['data'] = to_one_linkage(rid) if include_data
       link_object_hash
