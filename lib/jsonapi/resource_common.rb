@@ -501,8 +501,8 @@ module JSONAPI
 
         subclass._model_hints = (_model_hints || {}).dup
 
-        unless _model_name.empty? || _immutable
-          subclass.model_name(_model_name, add_model_hint: (_model_hints && !_model_hints[_model_name].nil?) == true)
+        unless subclass._model_name.empty? || _immutable
+          subclass.model_name(subclass._model_name, add_model_hint: (_model_hints && !_model_hints[subclass._model_name].nil?) == true)
         end
 
         subclass.rebuild_relationships(_relationships || {})
@@ -948,7 +948,7 @@ module JSONAPI
         @_relationships[type.to_sym]
       end
 
-      def _model_name
+      def _model_name subclass: nil
         if _abstract
           ''
         else

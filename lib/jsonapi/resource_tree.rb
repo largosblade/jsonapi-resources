@@ -74,8 +74,7 @@ module JSONAPI
     end
 
     def load_included(resource_klass, source_resource_tree, include_related, options)
-      
-       include_related.try(:each_key) do |key|
+      include_related.try(:each_key) do |key|
         relationship = resource_klass._relationship(key)
         relationship_name = relationship.name.to_sym
 
@@ -117,15 +116,6 @@ module JSONAPI
         if resource
           add_resource(resource, include_related)
         end
-
-        # resource_klasses = Set.new
-        # @fragments.each_key do |identity|
-        #   resource_klasses << identity.resource_klass
-        # end
-        # resource_klasses.each do |resource_klass|
-        #   binding.pry
-        #   # load_included(resource_klass, self, include_related, options)
-        # end
 
         complete_includes!(include_related, options)
       end

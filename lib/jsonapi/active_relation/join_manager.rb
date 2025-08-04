@@ -112,6 +112,8 @@ module JSONAPI
           join_sources = records.arel.join_sources
         end
 
+        # binding.pry if 'Api::V2::DispenseStepResource.dispense_log(BelongsToOne)' == relationship.to_s
+        
         if join_sources.length > init_join_sources_length
           last_join = (join_sources - init_join_sources).last
         else
@@ -189,7 +191,7 @@ module JSONAPI
 
       def add_join_details(join_key, details, check_for_duplicate_alias = true)
         raise 'details already set' if @join_details.has_key?(join_key)
-
+        # binding.pry if join_key.to_s == 'dispense_steps.dispense_log#dispense_logs'
         @join_details[join_key] = details
 
         # Joins are being tracked as they are added to the built up relation. If the same table is added to a
@@ -232,7 +234,7 @@ module JSONAPI
               )
             end
 
-            join_alias = self.class.alias_from_arel_node(join_node)
+            join_alias = self.class.alias_from_arel_node(join_node) || records.table_name
             details = { alias: join_alias, join_type: join_type }
 
             if relationship == source_relationship

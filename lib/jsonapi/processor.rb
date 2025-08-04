@@ -245,7 +245,6 @@ module JSONAPI
       }
 
       resource_set = find_resource_set(include_directives, options)
-
       resource_set.populate!(serializer, context, options)
       
       JSONAPI::ResourceSetOperationResult.new((result == :completed ? :created : :accepted), resource_set, result_options)
@@ -280,7 +279,6 @@ module JSONAPI
       }
 
       resource_set = find_resource_set(include_directives, options)
-
       resource_set.populate!(serializer, context, options)
 
       JSONAPI::ResourceSetOperationResult.new((result == :completed ? :ok : :accepted), resource_set, result_options)
@@ -384,7 +382,7 @@ module JSONAPI
       options[:cache] = resource_klass.caching?
 
       fragments = resource_klass.find_fragments(options[:filters], options)
-      resource_klass.find_fragments(options[:filters], options)
+      # resource_klass.find_fragments(options[:filters], options)
       PrimaryResourceTree.new(fragments: fragments, include_related: include_related, options: options)
     end
 

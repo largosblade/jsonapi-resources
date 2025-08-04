@@ -242,6 +242,7 @@ module JSONAPI
           records = records.select(concat_table_field(_table_name, Arel.star))
 
           old_records = records
+          # TODO we have *got to* figure out to properly replace this
           begin
             records.to_a
           rescue
@@ -249,25 +250,7 @@ module JSONAPI
           end
 
           resources = resources_for(records, options[:context])
-          # binding.pry
           fragments = convert_resources_to_fragments resources, linkage_fields
-          # resources.each do |resource|
-          #   rid = resource.identity
-          #   fragments[rid] ||= JSONAPI::ResourceFragment.new(rid, resource: resource)
-          #   linkage_fields.each do |linkage_field_details|
-          #     fragments[rid].initialize_related(linkage_field_details[:relationship_name])
-          #     # a less magical way at finding the related_id
-          #     # does not use an ad hoc field hidden on records
-          #     related_model = resource._model.public_send(linkage_field_details[:relationship_name])
-          #     model_classes_match = related_model.class <= linkage_field_details[:resource_klass]._model_class
-          #     related_id = related_model.id if model_classes_match
-          #     # related_id = resource._model.attributes[linkage_field_details[:select_alias]]
-          #     if related_id
-          #       related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
-          #       fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
-          #     end
-          #   end
-          # end
         end
 
         fragments
@@ -340,7 +323,8 @@ module JSONAPI
       def find_related_fragments_from_inverse(source, source_relationship, options, connect_source_identity)
         relationship = source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
         source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
-        raise "missing inverse relationship for \"#{source_relationship.name}\", inspect that this relationship is defined both on model and on the resource" unless relationship.present?
+        # binding.pry unless relationship.present?
+        raise "missing inverse relationship for \"#{source_relationship.name}\" on \"#{source_relationship.parent_resource.name}\", inspect that this relationship is defined both on model and on the resource" unless relationship.present?
 
         parent_resource_klass = relationship.resource_klass
 
@@ -450,7 +434,7 @@ module JSONAPI
 
           linkage_relationships.each do |linkage_relationship|
             linkage_relationship_name = linkage_relationship.name
-
+            # binding.pry if linkage_relationship_name == 'dispense_log'
             if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
               linkage_relationship.resource_types.each do |resource_type|
                 klass = linkage_relationship.resource_klass.resource_klass_for(resource_type)
@@ -503,33 +487,6 @@ module JSONAPI
                                                      relationship,
                                                      connect_source_identity,
                                                      parent_resource_klass
-          # resources.each do |resource|
-          #   rid = resource.identity
-
-          #   fragments[rid] ||= JSONAPI::ResourceFragment.new(rid, resource: resource)
-
-          #   parent_rid = JSONAPI::ResourceIdentity.new(parent_resource_klass,
-          #                                              resource._model.attributes['jr_source_id'])
-
-          #   fragments[rid].add_related_identity(relationship.name, parent_rid) if connect_source_identity
-
-          #   fragments[rid].add_related_from(parent_rid)
-
-          #   linkage_fields.each do |linkage_field_details|
-          #     fragments[rid].initialize_related(linkage_field_details[:relationship_name])
-          #     # violates DRY
-          #     related_model = resource._model.public_send(linkage_field_details[:relationship_name])
-          #     model_classes_match = related_model.class <= linkage_field_details[:resource_klass]._model_class
-          #     related_id = related_model.id if model_classes_match
-          #     # related_id = resource._model.attributes[linkage_field_details[:select_alias]]
-          #     if related_id
-          #       related_rid = JSONAPI::ResourceIdentity.new(linkage_field_details[:resource_klass], related_id)
-          #       fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
-          #     else
-          #       # binding.pry
-          #     end
-          #   end
-          # end
         end
         
         fragments
@@ -539,7 +496,6 @@ module JSONAPI
 
       def convert_resources_to_fragments(resources, linkage_fields, relationship = nil, connect_source_identity = nil, parent_resource_klass = nil)
         fragments = {}
-        binding.pry
 
         resources.each do |resource|
           rid = resource.identity
@@ -567,6 +523,18 @@ module JSONAPI
               fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
             end
           end
+          # binding.pry
+          resource.class._relationships
+            .select { |_, rel| rel.class == JSONAPI::Relationship::ToMany }
+            .each do |name, relationship|
+              fragments[rid].initialize_related(name)
+              relationship.resource_klass
+              model_ids = resource._model.public_send(name).pluck(:id)
+              rids = model_ids.map do |id|
+                JSONAPI::ResourceIdentity.new(relationship.resource_klass, id)
+              end
+              fragments[rid].merge_related_identities name, rids
+            end
         end
 
         fragments
@@ -669,7 +637,6 @@ module JSONAPI
           when :inner
             records = records.reload.joins(resource_type.to_s.singularize.to_sym)
           when :left
-            # binding.pry
             records = records.reload.joins_left(resource_type.to_s.singularize.to_sym)
           end
         else
@@ -686,13 +653,11 @@ module JSONAPI
           # else
           case join_type
           when :inner
-            # binding.pry
             records = records.reload.joins(relation_name)
           when :left
             records = records.reload.left_joins(relation_name)
           end
         end
-        # end
         records
       end
 

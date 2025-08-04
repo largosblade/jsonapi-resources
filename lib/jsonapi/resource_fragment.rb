@@ -40,7 +40,7 @@ module JSONAPI
 
     def merge_related_identities(relationship_name, identities)
       initialize_related(relationship_name)
-      binding.pry
+      # binding.pry
       @related[relationship_name.to_sym].merge(identities) if identities
     end
 
