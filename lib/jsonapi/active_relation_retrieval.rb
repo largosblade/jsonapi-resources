@@ -322,8 +322,10 @@ module JSONAPI
 
       def find_related_fragments_from_inverse(source, source_relationship, options, connect_source_identity)
         relationship = source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
-        source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
+        # source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
+        relationship ||= source_relationship.resource_klass._relationship(source_relationship.parent_resource.superclass._type.to_s.singularize)
         # binding.pry unless relationship.present?
+        source_relationship.inverse_relationship
         raise "missing inverse relationship for \"#{source_relationship.name}\" on \"#{source_relationship.parent_resource.name}\", inspect that this relationship is defined both on model and on the resource" unless relationship.present?
 
         parent_resource_klass = relationship.resource_klass

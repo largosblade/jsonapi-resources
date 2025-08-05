@@ -85,6 +85,7 @@ module JSONAPI
           # In Rails 8, we need to use a different approach to get join sources
           # Use the relation's internal arel representation
           begin
+            # binding.pry
             arel_relation = records.send(:arel)
             init_join_sources = arel_relation.join_sources
             init_join_sources_length = init_join_sources.length
@@ -98,6 +99,7 @@ module JSONAPI
           init_join_sources_length = init_join_sources.length
         end
 
+        old_records = records
         records = yield(records, options)
 
         if Rails::VERSION::MAJOR >= 8
@@ -107,6 +109,10 @@ module JSONAPI
           rescue NoMethodError
             # Fallback if arel method is completely unavailable
             join_sources = []
+          # rescue
+          #   binding.pry
+          #   yield(records, options)
+          #   raise
           end
         else
           join_sources = records.arel.join_sources

@@ -443,6 +443,11 @@ module JSONAPI
     end
 
     module ClassMethods
+      def sti_model?
+        return @sti_model if defined? @sti_model
+        @sti_model = _model_class.columns.map(&:name).include? _model_class.inheritance_column
+      end
+
       def resource_retrieval_strategy(module_name = JSONAPI.configuration.default_resource_retrieval_strategy)
         if @_resource_retrieval_strategy_loaded
           warn "Resource retrieval strategy #{@_resource_retrieval_strategy_loaded} already loaded for #{self.name}"
@@ -1204,6 +1209,7 @@ module JSONAPI
 
       # ResourceBuilder methods
       def define_relationship_methods(relationship_name, relationship_klass, options)
+        _model_class # trigger loading model definition
         relationship = register_relationship(
           relationship_name,
           relationship_klass.new(relationship_name, options)

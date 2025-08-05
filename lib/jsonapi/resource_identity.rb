@@ -27,11 +27,15 @@ module JSONAPI
     end
 
     def eql?(other)
-      other.is_a?(ResourceIdentity) && other.resource_klass == @resource_klass && other.id == @id
+      # other.is_a?(ResourceIdentity) && other.resource_klass == @resource_klass && other.id == @id
+      other.is_a?(ResourceIdentity) &&
+        model_class_match?(other) &&
+        other.id == @id
     end
 
     def hash
-      [@resource_klass, @id].hash
+      # [@resource_klass, @id].hash
+      [_table_name, @id].hash
     end
 
     def <=>(other_identity)
@@ -44,5 +48,18 @@ module JSONAPI
       "#{resource_klass}:#{id}"
       # :nocov:
     end
+
+  private
+
+    def model_class_match? other
+      return other.resource_klass == resource_klass unless sti_model?
+      # if two models are on the same hierarchry, they must have the same base
+      # (essentially by definition)
+      # same base class and same id, must be the same row in the DB
+      # (other.resource_klass._model_class <=> resource_klass._model_class).present?
+      other.resource_klass._table_name == _table_name
+    end
+
+    delegate :sti_model?, :_table_name, to: :resource_klass, private: true
   end
 end

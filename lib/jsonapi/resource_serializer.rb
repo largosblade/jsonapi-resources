@@ -252,12 +252,22 @@ module JSONAPI
       }
     end
 
+    private
+
+    def ensure_routes_defined
+      @ensure_routes_defined ||= Rails.application.reload_routes!
+      nil
+    end
+
+    public
+
     def meta_hash(source)
       meta = source.meta(custom_generation_options)
       (meta.is_a?(Hash) && meta) || {}
     end
 
     def links_hash(source)
+      ensure_routes_defined
       links = custom_links_hash(source)
       if !links.key?('self') && !source.class.exclude_link?(:self)
         links['self'] = link_builder.self_link(source)

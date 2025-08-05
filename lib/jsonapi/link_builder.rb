@@ -66,6 +66,7 @@ module JSONAPI
         "#{ self_link(source) }/relationships/#{ route_for_relationship(relationship) }"
       else
         if JSONAPI.configuration.warn_on_missing_routes && !relationship._warned_missing_route
+          # binding.pry
           warn "self_link for #{relationship} could not be generated"
           relationship._warned_missing_route = true
         end
@@ -78,6 +79,7 @@ module JSONAPI
         resource_url(source)
       else
         if JSONAPI.configuration.warn_on_missing_routes && !source.class._warned_missing_route
+          # binding.pry
           warn "self_link for #{source.class} could not be generated"
           source.class._warned_missing_route = true
         end
