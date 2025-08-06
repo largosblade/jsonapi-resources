@@ -293,6 +293,7 @@ module JSONAPI
 
       def find_included_fragments(source_fragments, relationship, options)
         # binding.pry unless relationship.respond_to?(:polymorphic_types)
+        # source_fragments.first.related[relationship.name.to_sym]
         if relationship.polymorphic? # && relationship.foreign_key_on == :self
           # return {} unless relationship.respond_to?(:polymorphic_types)
           source_resource_klasses = if relationship.foreign_key_on == :self && relationship.respond_to?(:polymorphic_types)
@@ -321,6 +322,17 @@ module JSONAPI
       end
 
       def find_related_fragments_from_inverse(source, source_relationship, options, connect_source_identity)
+        resources = source.map do |sing_source|
+          next unless sing_source.respond_to? :related
+          rid_set = sing_source.related[source_relationship.name.to_sym]
+          rid_set&.map do |rid|
+            klass = rid.resource_klass
+            klass.new klass._model_class.find_by(id: rid.id), options[:context]
+          end
+        end.compact.flatten
+        new_way_res = convert_resources_to_fragments resources, {}
+        return new_way_res unless new_way_res.empty?
+
         relationship = source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
         # source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
         relationship ||= source_relationship.resource_klass._relationship(source_relationship.parent_resource.superclass._type.to_s.singularize)
@@ -723,14 +735,18 @@ module JSONAPI
                                             paginator: nil,
                                             options: {})
         options[:_relation_helper_options] = { join_manager: join_manager, sort_fields: [] }
-
+        old_records = records
         records = resource_klass.apply_joins(records, join_manager, options)
+        # binding.pry if join_manager.source_join_details[:alias] == 'dispense_steps'
 
         if source_ids
           source_join_details = join_manager.source_join_details
+          
+          join_manager.source_join_details
           source_primary_key = join_manager.source_relationship.resource_klass._primary_key
 
           source_aliased_key = concat_table_field(source_join_details[:alias], source_primary_key, false)
+          # source_aliased_key = concat_table_field(join_manager.source_relationship.name, source_primary_key, false)
           records = records.where(source_aliased_key => source_ids)
         end
 

@@ -82,6 +82,7 @@ module JSONAPI
         find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
         find_related_resource_options[:cache] = resource_klass.caching?
 
+        # binding.pry
         related_fragments = resource_klass.find_included_fragments(source_resource_tree.fragments.values,
                                                                    relationship,
                                                                    find_related_resource_options)
