@@ -322,13 +322,11 @@ module JSONAPI
           relationship_klass = source.resource_klass._relationship(relationship_name)
 
           if relationship_klass.is_a?(JSONAPI::Relationship::ToOne)
-            # include_linkage = @always_include_to_one_linkage_data | relationship_klass.always_include_linkage_data
             if relationship_data[relationship_name]
               rids = relationship_data[relationship_name].first
               relationship['data'] = to_one_linkage(rids)
             end
           else
-            # include_linkage = relationship_klass.always_include_linkage_data
             if relationship_data[relationship_name]
               rids = relationship_data[relationship_name]
               relationship['data'] = to_many_linkage(rids)
@@ -382,8 +380,6 @@ module JSONAPI
       link_object_hash = {}
 
       links = default_relationship_links(source, relationship)
-      # source._model
-      # binding.pry
       link_object_hash['links'] = links unless links.blank?
       link_object_hash['data'] = to_one_linkage(rid) if include_data
       link_object_hash

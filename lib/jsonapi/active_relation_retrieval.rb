@@ -267,8 +267,7 @@ module JSONAPI
       #    the ResourceInstances matching the filters, sorting, and pagination rules along with any request
       #    additional_field values
       def find_related_fragments(source_fragment, relationship, options = {})
-        
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
+        if relationship.polymorphic?
           source_resource_klasses = if relationship.foreign_key_on == :self
                                       relationship.polymorphic_types.collect do |polymorphic_type|
                                         resource_klass_for(polymorphic_type)
@@ -292,10 +291,7 @@ module JSONAPI
       end
 
       def find_included_fragments(source_fragments, relationship, options)
-        # binding.pry unless relationship.respond_to?(:polymorphic_types)
-        # source_fragments.first.related[relationship.name.to_sym]
-        if relationship.polymorphic? # && relationship.foreign_key_on == :self
-          # return {} unless relationship.respond_to?(:polymorphic_types)
+        if relationship.polymorphic?
           source_resource_klasses = if relationship.foreign_key_on == :self && relationship.respond_to?(:polymorphic_types)
                                       relationship.polymorphic_types.collect do |polymorphic_type|
                                         resource_klass_for(polymorphic_type)
@@ -310,8 +306,6 @@ module JSONAPI
           fragments = {}
           source_resource_klasses.each do |resource_klass|
             inverse_direct_relationship = _relationship(resource_klass._type.to_s.singularize)
-            # inverse_direct_relationship ||= _relationship(relationship.resource_klass._type.to_s.singularize)
-            _relationship(resource_klass._type.to_s.singularize)
             fragments.merge!(resource_klass.find_related_fragments_from_inverse(source_fragments,
                                                                                 inverse_direct_relationship, options, true))
           end
@@ -334,10 +328,7 @@ module JSONAPI
         return new_way_res unless new_way_res.empty?
 
         relationship = source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
-        # source_relationship.resource_klass._relationship(source_relationship.inverse_relationship)
         relationship ||= source_relationship.resource_klass._relationship(source_relationship.parent_resource.superclass._type.to_s.singularize)
-        # binding.pry unless relationship.present?
-        source_relationship.inverse_relationship
         raise "missing inverse relationship for \"#{source_relationship.name}\" on \"#{source_relationship.parent_resource.name}\", inspect that this relationship is defined both on model and on the resource" unless relationship.present?
 
         parent_resource_klass = relationship.resource_klass
@@ -448,7 +439,6 @@ module JSONAPI
 
           linkage_relationships.each do |linkage_relationship|
             linkage_relationship_name = linkage_relationship.name
-            # binding.pry if linkage_relationship_name == 'dispense_log'
             if linkage_relationship.polymorphic? && linkage_relationship.belongs_to?
               linkage_relationship.resource_types.each do |resource_type|
                 klass = linkage_relationship.resource_klass.resource_klass_for(resource_type)
@@ -537,7 +527,6 @@ module JSONAPI
               fragments[rid].add_related_identity(linkage_field_details[:relationship_name], related_rid)
             end
           end
-          # binding.pry
           resource.class._relationships
             .select { |_, rel| rel.class == JSONAPI::Relationship::ToMany }
             .each do |name, relationship|
@@ -656,15 +645,6 @@ module JSONAPI
         else
           relation_name = relationship.relation_name(options)
 
-          # if relationship.alias_on_join
-          #   alias_name = "#{relationship.preferred_alias}_#{relation_name}"
-          #   case join_type
-          #   when :inner
-          #     records = records.joins_with_alias(relation_name, alias_name)
-          #   when :left
-          #     records = records.left_joins_with_alias(relation_name, alias_name)
-          #   end
-          # else
           case join_type
           when :inner
             records = records.reload.joins(relation_name)
@@ -737,8 +717,7 @@ module JSONAPI
         options[:_relation_helper_options] = { join_manager: join_manager, sort_fields: [] }
         old_records = records
         records = resource_klass.apply_joins(records, join_manager, options)
-        # binding.pry if join_manager.source_join_details[:alias] == 'dispense_steps'
-
+        
         if source_ids
           source_join_details = join_manager.source_join_details
           
@@ -746,7 +725,6 @@ module JSONAPI
           source_primary_key = join_manager.source_relationship.resource_klass._primary_key
 
           source_aliased_key = concat_table_field(source_join_details[:alias], source_primary_key, false)
-          # source_aliased_key = concat_table_field(join_manager.source_relationship.name, source_primary_key, false)
           records = records.where(source_aliased_key => source_ids)
         end
 

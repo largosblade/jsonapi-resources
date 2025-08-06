@@ -34,13 +34,11 @@ module JSONAPI
 
     def add_related_identity(relationship_name, identity)
       initialize_related(relationship_name)
-      # binding.pry
       @related[relationship_name.to_sym] << identity if identity
     end
 
     def merge_related_identities(relationship_name, identities)
       initialize_related(relationship_name)
-      # binding.pry
       @related[relationship_name.to_sym].merge(identities) if identities
     end
 

@@ -82,7 +82,6 @@ module JSONAPI
         find_related_resource_options[:sort_criteria] = relationship.resource_klass.default_sort
         find_related_resource_options[:cache] = resource_klass.caching?
 
-        # binding.pry
         related_fragments = resource_klass.find_included_fragments(source_resource_tree.fragments.values,
                                                                    relationship,
                                                                    find_related_resource_options)
@@ -173,7 +172,6 @@ module JSONAPI
       init_included_relationships(fragment, include_related)
 
       fragment.related_from.each do |rid|
-        # binding.pry unless @source_resource_tree.fragments[rid]
         @source_resource_tree.fragments[rid].add_related_identity(parent_relationship.name, fragment.identity)
       end
 

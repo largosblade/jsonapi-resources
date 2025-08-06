@@ -100,11 +100,9 @@ module JSONAPI
         ObjectSpace.each_object do |klass|
           next unless Module === klass
           if ActiveRecord::Base > klass
-            a = klass.reflect_on_all_associations(:has_many).select { |r| r.options[:as] }.each do |reflection|
+            klass.reflect_on_all_associations(:has_many).select { |r| r.options[:as] }.each do |reflection|
               (hash[reflection.options[:as]] ||= []) << klass.name.underscore
             end
-            # binding.pry if a.empty?
-            a
           end
         end
       end
